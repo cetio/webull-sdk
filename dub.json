@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"cet"
+	],
+	"copyright": "Copyright © 2026, cet",
+	"description": "Webull API, for D!",
+	"license": "AGPL-3.0-only",
+	"name": "webull"
+}
