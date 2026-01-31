@@ -76,8 +76,6 @@ HTTP orchestrate(string VERSION = "v1")(
     return http;
 }
 
-private:
-
 string encode(string uri, string[string] params, string bodyStr)
 {
     if (uri.length == 0)
@@ -137,6 +135,8 @@ string sign(string source, string secret)
     hmac.put(sourceBytes);
     return cast(string) Base64.encode(hmac.finish());
 }
+
+public:
 
 string toCompactJSON(JSONValue val)
 {

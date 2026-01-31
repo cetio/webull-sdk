@@ -16,6 +16,17 @@ enum Status : string
     PENDING = "PENDING"
 }
 
+enum Permissions : uint
+{
+    NONE = 0,
+    BARS = 1 << 0,
+    TICKS = 1 << 1,
+    QUOTES = 1 << 2,
+    SNAPSHOTS = 1 << 3,
+    FOOTPRINT = 1 << 4,
+    ALL = BARS | TICKS | QUOTES | SNAPSHOTS | FOOTPRINT
+}
+
 struct Token
 {
     string token;
@@ -28,6 +39,7 @@ static class Client
     static string key;
     static string secret;
     static Token token;
+    static Permissions permissions = Permissions.NONE;
 
     static void createToken(void delegate(Status) poll = null)
     {
@@ -92,5 +104,75 @@ static class Client
             token.expires = json["expires"].integer;
         
         token.status = cast(Status)json["status"].str;
+    }
+
+    static void detectPermissions()
+    {
+        permissions = Permissions.NONE;
+        
+        // Test bars endpoint
+        try {
+            JSONValue json;
+            orchestrate!"v2"("api.webull.com", "/openapi/market-data/stock/bars", 
+                ["symbol": "AAPL", "category": "US_STOCK", "timespan": "M1", "count": "1"])
+                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
+                     (ubyte[] data) { });
+            if (json.type != JSONType.object || "error_code" !in json)
+                permissions |= Permissions.BARS;
+        } catch (Exception e) {
+            // Silent failure - permission not available
+        }
+        
+        // Test ticks endpoint
+        try {
+            JSONValue json;
+            orchestrate!"v2"("api.webull.com", "/openapi/market-data/stock/tick",
+                ["symbol": "AAPL", "category": "US_STOCK"])
+                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
+                     (ubyte[] data) { });
+            if (json.type != JSONType.object || "error_code" !in json)
+                permissions |= Permissions.TICKS;
+        } catch (Exception e) {
+            // Silent failure - permission not available
+        }
+        
+        // Test quotes endpoint
+        try {
+            JSONValue json;
+            orchestrate!"v2"("api.webull.com", "/openapi/market-data/stock/quotes",
+                ["symbol": "AAPL", "category": "US_STOCK", "depth": "1", "overnight_required": "false"])
+                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
+                     (ubyte[] data) { });
+            if (json.type != JSONType.object || "error_code" !in json)
+                permissions |= Permissions.QUOTES;
+        } catch (Exception e) {
+            // Silent failure - permission not available
+        }
+        
+        // Test snapshots endpoint
+        try {
+            JSONValue json;
+            orchestrate("api.webull.com", "/market-data/snapshot",
+                ["symbols": "AAPL", "category": "US_STOCK"])
+                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
+                     (ubyte[] data) { });
+            if (json.type != JSONType.object || "error_code" !in json)
+                permissions |= Permissions.SNAPSHOTS;
+        } catch (Exception e) {
+            // Silent failure - permission not available
+        }
+        
+        // Test footprint endpoint
+        try {
+            JSONValue json;
+            orchestrate!"v2"("api.webull.com", "/openapi/market-data/stock/footprint",
+                ["symbol": "AAPL", "category": "US_STOCK", "timespan": "M1", "count": "1"])
+                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
+                     (ubyte[] data) { });
+            if (json.type != JSONType.object || "error_code" !in json)
+                permissions |= Permissions.FOOTPRINT;
+        } catch (Exception e) {
+            // Silent failure - permission not available
+        }
     }
 }

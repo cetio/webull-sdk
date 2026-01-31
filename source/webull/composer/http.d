@@ -3,6 +3,7 @@ module webull.composer.http;
 import std.net.curl;
 import std.json;
 import std.stdio : writeln;
+import webull.composer.orchestrate : toCompactJSON;
 
 void get(
     HTTP http,
@@ -53,7 +54,7 @@ void post(
 {
     http.method = HTTP.Method.post;
     if (json.type != JSONType.null_)
-        http.setPostData(json.toString(JSONOptions.specialFloatLiterals), "application/json");
+        http.setPostData(toCompactJSON(json), "application/json");
     else
         http.setPostData("", "application/json");
 
