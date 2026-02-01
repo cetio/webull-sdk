@@ -45,12 +45,12 @@ HTTP orchestrate(string VERSION = "v1")(
     string bodyStr = null;
     if (bodyParams.type != JSONType.null_ && bodyParams.type != JSONType.object)
     {
-        string bodyJson = toCompactJSON(bodyParams);
+        string bodyJson = bodyParams.toString;
         bodyStr = md5Hex(bodyJson).toUpper();
     }
     else if (bodyParams.type == JSONType.object && bodyParams.object.length > 0)
     {
-        string bodyJson = toCompactJSON(bodyParams);
+        string bodyJson = bodyParams.toString;
         bodyStr = md5Hex(bodyJson).toUpper();
     }
     
@@ -134,68 +134,4 @@ string sign(string source, string secret)
     ubyte[] sourceBytes = cast(ubyte[]) source;
     hmac.put(sourceBytes);
     return cast(string) Base64.encode(hmac.finish());
-}
-
-public:
-
-string toCompactJSON(JSONValue val)
-{
-    import std.ascii : isControl;
-    
-    final switch (val.type)
-    {
-        case JSONType.null_:
-            return "null";
-        case JSONType.object:
-            string[] pairs;
-            foreach (k, v; val.object)
-            {
-                pairs ~= `"` ~ k ~ `":` ~ toCompactJSON(v);
-            }
-            return "{" ~ pairs.join(",") ~ "}";
-        case JSONType.array:
-            string[] items;
-            foreach (item; val.array)
-            {
-                items ~= toCompactJSON(item);
-            }
-            return "[" ~ items.join(",") ~ "]";
-        case JSONType.string:
-            string escaped;
-            foreach (char c; val.str)
-            {
-                switch (c)
-                {
-                    case '"': escaped ~= `\"`; break;
-                    case '\\': escaped ~= `\\`; break;
-                    case '\b': escaped ~= `\b`; break;
-                    case '\f': escaped ~= `\f`; break;
-                    case '\n': escaped ~= `\n`; break;
-                    case '\r': escaped ~= `\r`; break;
-                    case '\t': escaped ~= `\t`; break;
-                    default:
-                        if (c.isControl)
-                            escaped ~= format("\\u%04x", cast(int)c);
-                        else
-                            escaped ~= c;
-                        break;
-                }
-            }
-            return `"` ~ escaped ~ `"`;
-        case JSONType.integer:
-            return to!string(val.integer);
-        case JSONType.uinteger:
-            return to!string(val.uinteger);
-        case JSONType.float_:
-            import std.math : isNaN, isInfinity;
-            if (val.floating.isNaN)
-                return "NaN";
-            if (val.floating.isInfinity)
-                return val.floating > 0 ? "Infinity" : "-Infinity";
-            return to!string(val.floating);
-        case JSONType.true_:
-            return "true";
-        case JSONType.false_:
-            return "false";
-    }
 }
