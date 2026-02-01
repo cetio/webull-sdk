@@ -34,20 +34,20 @@ enum Direction : string
 
 struct Bar
 {
-    Security security;
-    long time;
-    double open;
-    double high;
-    double low;
-    double close;
-    long volume;
+    string time;
     string tradingSession;
+    
+    double open, high, low, close;
+    long volume;
+    
+    long total, delta, buyTotal, sellTotal;
+    BookLevel[] buyDetail;
+    BookLevel[] sellDetail;
 }
 
-struct TickData
+struct Tick
 {
-    Security security;
-    long time;
+    string time;
     double price;
     long volume;
     Direction side;
@@ -55,7 +55,6 @@ struct TickData
 
 struct Snapshot
 {
-    Security security;
     long lastTradeTime;
     double price;
     double open;
@@ -98,32 +97,12 @@ struct BookLevel
 {
     double price;
     long size;
-    string[] mpids;
 }
 
 struct OrderBook
 {
-    Security security;
-    long timestamp;
+    long time;
     BookLevel[] bids;
     BookLevel[] asks;
 }
 
-struct FootprintLevel
-{
-    double price;
-    long volume;
-}
-
-struct FootprintBar
-{
-    Security security;
-    long time;
-    string tradingSession;
-    long total;
-    long delta;
-    long buyTotal;
-    long sellTotal;
-    FootprintLevel[] buyDetail;
-    FootprintLevel[] sellDetail;
-}

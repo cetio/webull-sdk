@@ -2,66 +2,60 @@ module webull.market.tick;
 
 import webull.composer;
 import webull.market.types;
+import webull.client : Client, Permissions;
 import std.json;
 import std.string : assumeUTF;
 import std.conv : to;
 import std.algorithm : map;
 import std.array : array, join;
 
-TickData[] getTicks(Security security, Session[] sessions = [Session.RTH])
+void getTicks(
+    Security security, 
+    int count = 30, 
+    Session[] sessions = [Session.PRE, Session.RTH, Session.ATH]
+)
 {
     if (!(Client.permissions & Permissions.TICKS))
         throw new Exception("Ticks API not available - permission denied");
     
     JSONValue json;
-    string[string] params = [
-        "symbol": security.symbol,
-        "category": cast(string)security.category
-    ];
-
-    if (sessions.length > 0)
-        params["trading_sessions"] = sessions.map!(s => cast(string)s).array.join(",");
-
     orchestrate!"v2"(
         "api.webull.com",
         "/openapi/market-data/stock/tick",
-        params
+        [
+            "symbol": security.symbol,
+            "category": cast(string)security.category,
+            "count": count.to!string,
+            "trading_sessions": sessions.map!(s => cast(string)s).array.join(",")
+        ]
     ).get(
-        (ubyte[] data) { json = parseJSON(data.assumeUTF); },
-        (ubyte[] data) { throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); }
+        (ubyte[] data) { 
+            json = parseJSON(data.assumeUTF); 
+        },
+        (ubyte[] data) { 
+            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
+        }
     );
     
-    return parseTicks(json, security);
+    security._ticks = parseTicks(json);
 }
 
+package:
 
-TickData[] parseTicks(JSONValue json, Security security)
+Tick[] parseTicks(JSONValue json)
 {
-    TickData[] ticks;
+    if ("result" !in json || json["result"].type != JSONType.array)
+        throw new Exception("Ticks invalid: "~json.toString);
 
-    JSONValue tickArray = json;
-    if (json.type == JSONType.object && "result" in json)
-        tickArray = json["result"];
-
-    if (tickArray.type != JSONType.array)
-        return ticks;
-
-    foreach (JSONValue item; tickArray.array)
+    Tick[] ticks;
+    foreach (JSONValue obj; json["result"].array)
     {
-        TickData tick;
-        tick.security = security;
-        if ("time" in item) tick.time = item["time"].str.to!long;
-        if ("price" in item) tick.price = item["price"].str.to!double;
-        if ("volume" in item) tick.volume = item["volume"].str.to!long;
-        if ("side" in item)
-        {
-            string side = item["side"].str;
-            if (side == "B") tick.side = Direction.BUY;
-            else if (side == "S") tick.side = Direction.SELL;
-            else tick.side = Direction.NEUTRAL;
-        }
+        Tick tick;
+        if ("time" in obj) tick.time = obj["time"].str;
+        if ("price" in obj) tick.price = obj["price"].str.to!double;
+        if ("volume" in obj) tick.volume = obj["volume"].str.to!long;
+        if ("side" in obj) tick.side = cast(Direction)obj["side"].str;
         ticks ~= tick;
     }
-
     return ticks;
 }

@@ -2,92 +2,97 @@ module webull.market.snapshot;
 
 import webull.composer;
 import webull.market.types;
+import webull.client : Client, Permissions;
 import std.json;
 import std.string : assumeUTF;
 import std.conv : to;
 import std.algorithm : map;
-import std.array : join;
+import std.array : join, array;
 
-Snapshot getSnapshot(Security security, bool extendedHours = false, bool overnight = false)
+void getSnapshot(
+    Security security, 
+    bool extendedHours = false, 
+    bool overnight = false
+)
 {
     if (!(Client.permissions & Permissions.SNAPSHOTS))
         throw new Exception("Snapshots API not available - permission denied");
     
     JSONValue json;
-    string[string] params = [
-        "symbols": security.symbol,
-        "category": cast(string)security.category
-    ];
-
-    if (extendedHours)
-        params["extend_hour_required"] = "true";
-    if (overnight)
-        params["overnight_required"] = "true";
-
     orchestrate(
         "api.webull.com",
         "/market-data/snapshot",
-        params
+        [
+            "symbols": security.symbol,
+            "category": cast(string)security.category,
+            "extended_hour_required": extendedHours.to!string,
+            "overnight_required": overnight.to!string
+        ]
     ).get(
-        (ubyte[] data) { json = parseJSON(data.assumeUTF); },
-        (ubyte[] data) { throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); }
+        (ubyte[] data) { 
+            json = parseJSON(data.assumeUTF); 
+        },
+        (ubyte[] data) { 
+            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
+        }
     );
     
     if (json.type == JSONType.array && json.array.length > 0)
-        return parseSnapshot(json.array[0], security);
+        security._snapshot = parseSnapshot(json.array[0]);
     else if (json.type == JSONType.object)
-        return parseSnapshot(json, security);
+        security._snapshot = parseSnapshot(json);
     else
         throw new Exception("Unexpected snapshot response format");
 }
 
-Snapshot[] getSnapshots(Security[] securities, bool extendedHours = false, bool overnight = false)
+Snapshot[] getSnapshot(
+    Security[] securities, 
+    bool extendedHours = false, 
+    bool overnight = false
+)
 {
     if (!(Client.permissions & Permissions.SNAPSHOTS))
         throw new Exception("Snapshots API not available - permission denied");
-    
-    string[] symbols;
-    foreach (s; securities) symbols ~= s.symbol;
+
     JSONValue json;
-    string[string] params = [
-        "symbols": symbols.join(","),
-        "category": cast(string)securities[0].category
-    ];
-
-    if (extendedHours)
-        params["extend_hour_required"] = "true";
-    if (overnight)
-        params["overnight_required"] = "true";
-
     orchestrate(
         "api.webull.com",
         "/market-data/snapshot",
-        params
+        [
+            "symbols": securities.map!(x => x.symbol).array.join(","),
+            "category": cast(string)securities[0].category,
+            "extended_hour_required": extendedHours.to!string,
+            "overnight_required": overnight.to!string
+        ]
     ).get(
-        (ubyte[] data) { json = parseJSON(data.assumeUTF); },
-        (ubyte[] data) { throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); }
+        (ubyte[] data) { 
+            json = parseJSON(data.assumeUTF); 
+        },
+        (ubyte[] data) { 
+            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
+        }
     );
     
     Snapshot[] snapshots;
     if (json.type == JSONType.array)
     {
-        foreach (size_t i, JSONValue item; json.array)
-            snapshots ~= parseSnapshot(item, securities[i]);
+        foreach (i, obj; json.array)
+            snapshots ~= parseSnapshot(obj);
     }
     else if (json.type == JSONType.object)
-    {
-        snapshots ~= parseSnapshot(json, securities[0]);
-    }
-    
+        snapshots ~= parseSnapshot(json);
+
     return snapshots;
 }
 
+package:
 
-Snapshot parseSnapshot(JSONValue json, Security security)
+Snapshot parseSnapshot(JSONValue json)
 {
-    Snapshot s;
-    s.security = security;
+    if ("symbol" !in json)
+        throw new Exception("Snapshot invalid: "~json.toString);
 
+    Snapshot s;
     if ("last_trade_time" in json) s.lastTradeTime = json["last_trade_time"].integer;
     if ("price" in json) s.price = json["price"].str.to!double;
     if ("open" in json) s.open = json["open"].str.to!double;
