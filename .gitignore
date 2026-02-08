@@ -3,12 +3,12 @@ docs.json
 __dummy.html
 docs/
 /webull
-webull.so
-webull.dylib
-webull.dll
-webull.a
-webull.lib
-webull-test-*
+webull-sdk.so
+webull-sdk.dylib
+webull-sdk.dll
+webull-sdk.a
+webull-sdk.lib
+webull-sdk-test-*
 *.exe
 *.pdb
 *.o
@@ -16,3 +16,4 @@ webull-test-*
 *.lst
 env.json
 token.json
+build_output.txt

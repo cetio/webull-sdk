@@ -3,7 +3,7 @@
 		"cet"
 	],
 	"copyright": "Copyright © 2026, cet",
-	"description": "Webull API, for D!",
+	"description": "Webull SDK, for D!",
 	"license": "AGPL-3.0-only",
-	"name": "webull"
+	"name": "webull-sdk"
 }

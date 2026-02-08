@@ -24,7 +24,8 @@ enum Permissions : uint
     QUOTES = 1 << 2,
     SNAPSHOTS = 1 << 3,
     FOOTPRINT = 1 << 4,
-    ALL = BARS | TICKS | QUOTES | SNAPSHOTS | FOOTPRINT
+    ACCOUNTS = 1 << 5,
+    ALL = BARS | TICKS | QUOTES | SNAPSHOTS | FOOTPRINT | ACCOUNTS
 }
 
 struct Token
@@ -34,12 +35,14 @@ struct Token
     Status status;
 }
 
+// TODO: Must verify the key and secret have been set.
 static class Client
 {
     static string key;
     static string secret;
     static Token token;
     static Permissions permissions = Permissions.NONE;
+    static string[] _accounts;
 
     static void createToken(void delegate(Status) poll = null)
     {
@@ -150,5 +153,53 @@ static class Client
                     
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.FOOTPRINT;
+
+        orchestrate!"v2"("api.webull.com", "/app/subscriptions/list")
+            .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
+                    (ubyte[] data) { });
+
+        if (json.type != JSONType.object || "error_code" !in json)
+            permissions |= Permissions.ACCOUNTS;
+    }
+
+    static string[] accounts()
+    {
+        if (_accounts.length == 0)
+        {
+            if (!(permissions & Permissions.ACCOUNTS))
+                throw new Exception("Accounts API not available - permission denied");
+
+            JSONValue json;
+            orchestrate!"v2"(
+                "api.webull.com",
+                "/app/subscriptions/list"
+            ).get(
+                (ubyte[] data) {
+                    json = parseJSON(data.assumeUTF);
+                },
+                (ubyte[] data) {
+                    throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
+                }
+            );
+
+            if (json.type == JSONType.array)
+            {
+                foreach (JSONValue item; json.array)
+                {
+                    if ("account_id" in item)
+                        _accounts ~= item["account_id"].str;
+                }
+            }
+            else if (json.type == JSONType.object && "data" in json && json["data"].type == JSONType.array)
+            {
+                foreach (JSONValue item; json["data"].array)
+                {
+                    if ("account_id" in item)
+                        _accounts ~= item["account_id"].str;
+                }
+            }
+        }
+
+        return _accounts;
     }
 }
