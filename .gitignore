@@ -9,6 +9,7 @@ webull-sdk.dll
 webull-sdk.a
 webull-sdk.lib
 webull-sdk-test-*
+webull-sdk
 *.exe
 *.pdb
 *.o

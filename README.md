@@ -77,7 +77,7 @@ writeln("AAPL: $", snap.price, " (", snap.changeRatio, "%)");
 - `webull.client` - Authentication state and token management
 - `webull.security` - Security objects with auto-updating data accessors
 - `webull.market` - Market data endpoints (bars, quotes, ticks, snapshots, footprint)
-- `webull.composer` - HMAC-SHA1 request signing and HTTP orchestration
+- `webull.orchestrate` - HMAC-SHA1 request signing and HTTP orchestration
 
 ## Roadmap
 
