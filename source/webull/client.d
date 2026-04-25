@@ -5,6 +5,8 @@ import std.json;
 import std.string : assumeUTF;
 import std.datetime;
 import std.stdio : writeln;
+import std.array : array;
+import std.algorithm : filter, map;
 import core.thread;
 import core.time;
 
@@ -40,6 +42,7 @@ static class Client
 {
     static string key;
     static string secret;
+    static string endpoint = "https://api.webull.com";
     static Token token;
     static Permissions permissions = Permissions.NONE;
     static string[] _accounts;
@@ -48,7 +51,7 @@ static class Client
     {
         JSONValue json;
         orchestrate!"v2"(
-            "api.webull.com", 
+            endpoint,
             "/openapi/auth/token/create"
         ).post(
             (ubyte[] data) {
@@ -86,7 +89,7 @@ static class Client
     {
         JSONValue json;
         orchestrate!"v2"(
-            "api.webull.com", 
+            endpoint,
             "/openapi/auth/token/check",
             null,
             JSONValue(["token" : token.token])
@@ -114,7 +117,8 @@ static class Client
         permissions = Permissions.NONE;
         
         JSONValue json;
-        orchestrate!"v2"("api.webull.com", "/openapi/market-data/stock/bars", 
+        json = JSONValue(null);
+        orchestrate!"v2"(endpoint, "/openapi/market-data/stock/bars",
             ["symbol": "AAPL", "category": "US_STOCK", "timespan": "M1", "real_time_required": "true"])
             .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
                     (ubyte[] data) { });
@@ -122,7 +126,8 @@ static class Client
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.BARS;
         
-        orchestrate!"v2"("api.webull.com", "/openapi/market-data/stock/tick",
+        json = JSONValue(null);
+        orchestrate!"v2"(endpoint, "/openapi/market-data/stock/tick",
             ["symbol": "AAPL", "category": "US_STOCK"])
             .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
                     (ubyte[] data) { });
@@ -130,7 +135,8 @@ static class Client
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.TICKS;
         
-        orchestrate!"v2"("api.webull.com", "/openapi/market-data/stock/quotes",
+        json = JSONValue(null);
+        orchestrate!"v2"(endpoint, "/openapi/market-data/stock/quotes",
             ["symbol": "AAPL", "category": "US_STOCK", "depth": "1", "overnight_required": "false"])
             .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
                     (ubyte[] data) { });
@@ -138,7 +144,8 @@ static class Client
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.QUOTES;
         
-        orchestrate("api.webull.com", "/market-data/snapshot",
+        json = JSONValue(null);
+        orchestrate(endpoint, "/market-data/snapshot",
             ["symbols": "AAPL", "category": "US_STOCK"])
             .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
                     (ubyte[] data) { });
@@ -146,7 +153,8 @@ static class Client
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.SNAPSHOTS;
         
-        orchestrate!"v2"("api.webull.com", "/openapi/market-data/stock/footprint",
+        json = JSONValue(null);
+        orchestrate!"v2"(endpoint, "/openapi/market-data/stock/footprint",
             ["symbol": "AAPL", "category": "US_STOCK", "timespan": "M1", "count": "1"])
             .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
                     (ubyte[] data) { });
@@ -154,9 +162,20 @@ static class Client
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.FOOTPRINT;
 
-        orchestrate!"v2"("api.webull.com", "/app/subscriptions/list")
-            .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
-                    (ubyte[] data) { });
+        json = JSONValue(null);
+        try
+        {
+            orchestrate!"v2"(endpoint, "/openapi/account/list")
+                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
+                        (ubyte[] data) { throw new Exception(cast(string)data.assumeUTF); });
+        }
+        catch (Exception)
+        {
+            json = JSONValue(null);
+            orchestrate!"v2"(endpoint, "/app/subscriptions/list")
+                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
+                        (ubyte[] data) { });
+        }
 
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.ACCOUNTS;
@@ -170,34 +189,46 @@ static class Client
                 throw new Exception("Accounts API not available - permission denied");
 
             JSONValue json;
-            orchestrate!"v2"(
-                "api.webull.com",
-                "/app/subscriptions/list"
-            ).get(
-                (ubyte[] data) {
-                    json = parseJSON(data.assumeUTF);
-                },
-                (ubyte[] data) {
-                    throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
-                }
-            );
+            try
+            {
+                orchestrate!"v2"(endpoint, "/openapi/account/list").get(
+                    (ubyte[] data) {
+                        json = parseJSON(data.assumeUTF);
+                    },
+                    (ubyte[] data) {
+                        throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
+                    }
+                );
+            }
+            catch (Exception)
+            {
+                orchestrate!"v2"(endpoint, "/app/subscriptions/list").get(
+                    (ubyte[] data) {
+                        json = parseJSON(data.assumeUTF);
+                    },
+                    (ubyte[] data) {
+                        throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
+                    }
+                );
+            }
 
+            JSONValue[] entries;
             if (json.type == JSONType.array)
+                entries = json.array.dup;
+            else if (json.type == JSONType.object)
             {
-                foreach (JSONValue item; json.array)
-                {
-                    if ("account_id" in item)
-                        _accounts ~= item["account_id"].str;
-                }
+                if ("result" in json && json["result"].type == JSONType.array)
+                    entries = json["result"].array.dup;
+                else if ("data" in json && json["data"].type == JSONType.array)
+                    entries = json["data"].array.dup;
+                else if ("accounts" in json && json["accounts"].type == JSONType.array)
+                    entries = json["accounts"].array.dup;
             }
-            else if (json.type == JSONType.object && "data" in json && json["data"].type == JSONType.array)
-            {
-                foreach (JSONValue item; json["data"].array)
-                {
-                    if ("account_id" in item)
-                        _accounts ~= item["account_id"].str;
-                }
-            }
+
+            _accounts = entries
+                .map!(item => "account_id" in item ? item["account_id"].str : null)
+                .array;
+            _accounts = _accounts.filter!(value => value !is null && value.length > 0).array;
         }
 
         return _accounts;

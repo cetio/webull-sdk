@@ -77,10 +77,10 @@ Snapshot[] getSnapshot(
     if (json.type == JSONType.array)
     {
         foreach (i, obj; json.array)
-            snapshots ~= parseSnapshot(obj);
+            snapshots~= parseSnapshot(obj);
     }
     else if (json.type == JSONType.object)
-        snapshots ~= parseSnapshot(json);
+        snapshots~= parseSnapshot(json);
 
     return snapshots;
 }

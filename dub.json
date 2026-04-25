@@ -2,11 +2,63 @@
 	"authors": [
 		"cet"
 	],
+	"configurations": [
+		{
+			"mainSourceFile": "source/app.d",
+			"name": "application",
+			"targetType": "executable"
+		},
+		{
+			"excludedSourceFiles": [
+				"source/app.d"
+			],
+			"mainSourceFile": "source/examples/account_console.d",
+			"name": "account-console-demo",
+			"targetType": "executable",
+			"versions": [
+				"WebullSdkExampleAccountConsole"
+			]
+		},
+		{
+			"excludedSourceFiles": [
+				"source/app.d"
+			],
+			"name": "dummy-tests",
+			"targetType": "library",
+			"versions": [
+				"WebullSdkTestDummy"
+			]
+		},
+		{
+			"excludedSourceFiles": [
+				"source/app.d"
+			],
+			"name": "live-tests",
+			"targetType": "library",
+			"versions": [
+				"WebullSdkTestLive"
+			]
+		},
+		{
+			"excludedSourceFiles": [
+				"source/app.d"
+			],
+			"name": "full-tests",
+			"targetType": "library",
+			"versions": [
+				"WebullSdkTestDummy",
+				"WebullSdkTestLive"
+			]
+		}
+	],
 	"copyright": "Copyright © 2026, cet",
 	"dependencies": {
 		"conductor": "~>1.0.0"
 	},
-	"description": "Webull SDK, for D!",
+	"description": "Webull SDK for D with native-feeling finance types.",
 	"license": "AGPL-3.0-only",
-	"name": "webull-sdk"
+	"name": "webull-sdk",
+	"sourcePaths": [
+		"source"
+	]
 }

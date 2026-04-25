@@ -75,7 +75,7 @@ Bar[] parseFootprintBars(JSONValue json)
                     BookLevel level;
                     level.price = price.to!double;
                     level.size = volume.str.to!long;
-                    bar.buyDetail ~= level;
+                    bar.buyDetail~= level;
                 }
             }
 
@@ -86,11 +86,11 @@ Bar[] parseFootprintBars(JSONValue json)
                     BookLevel level;
                     level.price = price.to!double;
                     level.size = volume.str.to!long;
-                    bar.sellDetail ~= level;
+                    bar.sellDetail~= level;
                 }
             }
 
-            bars ~= bar;
+            bars~= bar;
         }
     }
     return bars;

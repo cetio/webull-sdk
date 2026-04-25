@@ -115,7 +115,7 @@ Bar[] parseBars(JSONValue json)
         if ("close" in obj) bar.close = obj["close"].str.to!double;
         if ("volume" in obj) bar.volume = obj["volume"].str.to!long;
         if ("trading_session" in obj) bar.tradingSession = obj["trading_session"].str;
-        bars ~= bar;
+        bars~= bar;
     }
 
     return bars;

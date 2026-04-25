@@ -51,13 +51,13 @@ OrderBook parseOrderBook(JSONValue json)
     if ("bids" in json && json["bids"].type == JSONType.array)
     {
         foreach (JSONValue level; json["bids"].array)
-            ret.bids ~= parseBookLevel(level);
+            ret.bids~= parseBookLevel(level);
     }
 
     if ("asks" in json && json["asks"].type == JSONType.array)
     {
         foreach (JSONValue level; json["asks"].array)
-            ret.asks ~= parseBookLevel(level);
+            ret.asks~= parseBookLevel(level);
     }
 
     return ret;
@@ -75,7 +75,7 @@ BookLevel parseBookLevel(JSONValue json)
     //     foreach (JSONValue order; json["order"].array)
     //     {
     //         if ("mpid" in order)
-    //             level.mpids ~= order["mpid"].str;
+    //             level.mpids~= order["mpid"].str;
     //     }
     // }
 

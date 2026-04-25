@@ -58,7 +58,7 @@ void main()
     aapl.autoUpdate = false;
     writeln("Created Security for: ", aapl.symbol, " (ID: ", aapl.instrumentId, ")");
 
-    runExample("Snapshot for " ~ aapl.symbol, {
+    runExample("Snapshot for "~aapl.symbol, {
         getSnapshot(aapl);
         auto snap = aapl.snapshot();
         writeln("Symbol: ", aapl.symbol);
@@ -70,7 +70,7 @@ void main()
         writeln("Change: $", snap.change, " (", snap.changeRatio, "%)");
     });
 
-    runExample("M5 bars for " ~ aapl.symbol, {
+    runExample("M5 bars for "~aapl.symbol, {
         getBars(aapl, Timespan.M5, 10);
         auto bars = aapl.bars();
         writeln("Got ", bars.length, " bars:");
@@ -81,7 +81,7 @@ void main()
         }
     });
 
-    runExample("Order book for " ~ aapl.symbol, {
+    runExample("Order book for "~aapl.symbol, {
         getOrderBook(aapl, 5);
         auto book = aapl.orderBook();
         writeln("Bids:");
@@ -92,12 +92,12 @@ void main()
             writeln("  $", level.price, " x ", level.size);
     });
 
-    runExample("Recent ticks for " ~ aapl.symbol, {
+    runExample("Recent ticks for "~aapl.symbol, {
         getTicks(aapl, 30, [Session.RTH]);
         auto ticks = aapl.ticks();
         writeln("Got ", ticks.length, " ticks");
         size_t start = ticks.length > 5 ? ticks.length - 5 : 0;
-        foreach (tick; ticks[start .. $])
+        foreach (tick; ticks[start,,$])
             writeln("  ", tick.time, ": $", tick.price, " x ", tick.volume, " (", tick.side, ")");
     });
 

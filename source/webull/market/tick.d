@@ -55,7 +55,7 @@ Tick[] parseTicks(JSONValue json)
         if ("price" in obj) tick.price = obj["price"].str.to!double;
         if ("volume" in obj) tick.volume = obj["volume"].str.to!long;
         if ("side" in obj) tick.side = cast(Direction)obj["side"].str;
-        ticks ~= tick;
+        ticks~= tick;
     }
     return ticks;
 }
