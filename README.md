@@ -1,5 +1,7 @@
 # Webull
 
+[![License](https://img.shields.io/badge/License-AGPL--3-blue)](LICENSE.txt)
+
 Webull is a D library for the Webull OpenAPI, providing authenticated access to market data plus typed account access for account lists, balances, profiles, and positions.
 
 ## Features
@@ -125,4 +127,4 @@ foreach (account; accounts)
 
 ## License
 
-Webull is licensed under the [AGPL-3.0 license](LICENSE.txt).
+Webull-SDK is licensed under [AGPL-3.0](LICENSE.txt).
