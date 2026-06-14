@@ -123,7 +123,7 @@ version (WebullSdkExampleAccountConsole)
     {
         string result;
         result.reserve(token.length * count);
-        foreach (_; 0 .. count)
+        foreach (_; 0..count)
             result ~= token;
         return result;
     }
@@ -137,9 +137,9 @@ version (WebullSdkExampleAccountConsole)
             return text;
 
         if (limit <= 1)
-            return text[0 .. limit];
+            return text[0..limit];
 
-        return text[0 .. limit - 1] ~ "…";
+        return text[0..limit - 1]~"…";
     }
 
     private string padRight(string text, size_t length)
@@ -148,7 +148,7 @@ version (WebullSdkExampleAccountConsole)
         if (clipped.length >= length)
             return clipped;
 
-        return clipped ~ spaces(length - clipped.length);
+        return clipped~spaces(length - clipped.length);
     }
 
     private string padLeft(string text, size_t length)
@@ -157,7 +157,7 @@ version (WebullSdkExampleAccountConsole)
         if (clipped.length >= length)
             return clipped;
 
-        return spaces(length - clipped.length) ~ clipped;
+        return spaces(length - clipped.length)~clipped;
     }
 
     private string maskDigits(string text)
@@ -185,13 +185,13 @@ version (WebullSdkExampleAccountConsole)
         string result;
         size_t remainder = digits.length % 3;
         if (remainder > 0)
-            result ~= digits[0 .. remainder];
+            result ~= digits[0..remainder];
 
         for (size_t i = remainder; i < digits.length; i += 3)
         {
             if (result.length > 0)
                 result ~= ",";
-            result ~= digits[i .. i + 3];
+            result ~= digits[i..i + 3];
         }
 
         return result;
@@ -204,15 +204,15 @@ version (WebullSdkExampleAccountConsole)
         if (dot < 0)
             return raw;
 
-        string whole = raw[0 .. dot];
-        string fractional = raw[dot .. $];
+        string whole = raw[0..dot];
+        string fractional = raw[dot..$];
 
         bool negative = whole.length > 0 && whole[0] == '-';
         if (negative)
-            whole = whole[1 .. $];
+            whole = whole[1..$];
 
-        string formatted = withCommas(whole) ~ fractional;
-        return negative ? "-" ~ formatted : formatted;
+        string formatted = withCommas(whole)~fractional;
+        return negative ? "-"~formatted : formatted;
     }
 
     private string formatQuantity(double value)
@@ -225,30 +225,30 @@ version (WebullSdkExampleAccountConsole)
 
     private string formatMoney(RenderConfig config, double value, string currency = "USD")
     {
-        string prefix = currency == "USD" ? "$" : currency ~ " ";
+        string prefix = currency == "USD" ? "$" : currency~" ";
         if (value < 0)
-            return maybeMask(config, "-" ~ prefix ~ formatFixed(-value, 2));
+            return maybeMask(config, "-"~prefix~formatFixed(-value, 2));
 
-        return maybeMask(config, prefix ~ formatFixed(value, 2));
+        return maybeMask(config, prefix~formatFixed(value, 2));
     }
 
     private string formatPercent(RenderConfig config, double value)
-        => maybeMask(config, formatFixed(value * 100, 2) ~ "%");
+        => maybeMask(config, formatFixed(value * 100, 2)~"%");
 
     private string formatRawNumber(RenderConfig config, double value)
         => maybeMask(config, formatQuantity(value));
 
     private string formatKeyValue(string label, string value, size_t labelWidth = 13)
-        => padRight(label, labelWidth) ~ value;
+        => padRight(label, labelWidth)~value;
 
     private string formatStatusLine(DemoData data, RenderConfig config)
-        => "mode: " ~ data.modeLabel.toLower() ~ "   privacy: " ~ (config.maskNumbers ? "masked" : "visible");
+        => "mode: "~data.modeLabel.toLower()~"   privacy: "~(config.maskNumbers ? "masked" : "visible");
 
     private string normalizedTag(string accountType, size_t fallbackIndex)
     {
         string lowered = accountType.toLower();
         if (lowered.length == 0)
-            return "account" ~ fallbackIndex.to!string;
+            return "account"~fallbackIndex.to!string;
 
         if (lowered.indexOf("margin") >= 0)
             return "margin";
@@ -396,7 +396,7 @@ version (WebullSdkExampleAccountConsole)
                 return current;
         }
 
-        throw new Exception("Unsupported WEBULL_DEMO_VIEW: " ~ value);
+        throw new Exception("Unsupported WEBULL_DEMO_VIEW: "~value);
     }
 
     private string maskedId(RenderConfig config, string value, size_t width = 24)
@@ -464,7 +464,7 @@ version (WebullSdkExampleAccountConsole)
     {
         PortfolioHolding[] holdings = combinedHoldings(data);
         size_t count = holdings.length > 4 ? 4 : holdings.length;
-        return holdings[0 .. count].map!(holding => holding.symbol).array.join("  ");
+        return holdings[0..count].map!(holding => holding.symbol).array.join("  ");
     }
 
     private string[] renderOverview(DemoData data, RenderConfig config)
@@ -496,15 +496,15 @@ version (WebullSdkExampleAccountConsole)
             "",
             "accounts",
             "--------",
-            padRight(pickMarginAccount(data).tag, 8) ~ maybeMask(config, pickMarginAccount(data).accountNumber) ~ "  " ~ pickMarginAccount(data).accountStatus.toLower(),
-            padRight(pickCashAccount(data).tag, 8) ~ maybeMask(config, pickCashAccount(data).accountNumber) ~ "  " ~ pickCashAccount(data).accountStatus.toLower(),
+            padRight(pickMarginAccount(data).tag, 8)~maybeMask(config, pickMarginAccount(data).accountNumber)~"  "~pickMarginAccount(data).accountStatus.toLower(),
+            padRight(pickCashAccount(data).tag, 8)~maybeMask(config, pickCashAccount(data).accountNumber)~"  "~pickCashAccount(data).accountStatus.toLower(),
         ];
     }
 
     private string[] renderAccountView(DemoAccount account, RenderConfig config, size_t rows)
     {
         string[] lines = [
-            account.tag ~ " account",
+            account.tag~" account",
             repeat("-", account.tag.length + 8),
             formatKeyValue("number", maybeMask(config, account.accountNumber)),
             formatKeyValue("status", account.accountStatus.toLower()),
@@ -517,16 +517,16 @@ version (WebullSdkExampleAccountConsole)
             "",
             "holdings",
             "--------",
-            padRight("symbol", 8) ~ padLeft("qty", 8) ~ " " ~ padLeft("last", 9) ~ " " ~ padLeft("value", 11) ~ " " ~ padLeft("p/l", 11),
+            padRight("symbol", 8)~padLeft("qty", 8)~" "~padLeft("last", 9)~" "~padLeft("value", 11)~" "~padLeft("p/l", 11),
         ];
 
         size_t count = account.positions.length > rows ? rows : account.positions.length;
-        foreach (DemoPosition position; account.positions[0 .. count])
+        foreach (DemoPosition position; account.positions[0..count])
         {
             lines ~= padRight(position.symbol, 8) ~
-                padLeft(formatRawNumber(config, position.quantity), 8) ~ " " ~
-                padLeft(formatMoney(config, position.lastPrice, position.currency), 9) ~ " " ~
-                padLeft(formatMoney(config, position.marketValue, position.currency), 11) ~ " " ~
+                padLeft(formatRawNumber(config, position.quantity), 8)~" " ~
+                padLeft(formatMoney(config, position.lastPrice, position.currency), 9)~" " ~
+                padLeft(formatMoney(config, position.marketValue, position.currency), 11)~" " ~
                 padLeft(formatMoney(config, position.unrealizedProfitLoss, position.currency), 11);
         }
 
@@ -551,17 +551,17 @@ version (WebullSdkExampleAccountConsole)
             "",
             "leaders",
             "-------",
-            padRight("symbol", 7) ~ " " ~ padRight("acct", 7) ~ " " ~ padLeft("qty", 7) ~ " " ~ padLeft("value", 11) ~ " " ~ padLeft("p/l", 11) ~ " " ~ padLeft("wt", 7),
+            padRight("symbol", 7)~" "~padRight("acct", 7)~" "~padLeft("qty", 7)~" "~padLeft("value", 11)~" "~padLeft("p/l", 11)~" "~padLeft("wt", 7),
         ];
 
         size_t count = holdings.length > 6 ? 6 : holdings.length;
-        foreach (PortfolioHolding holding; holdings[0 .. count])
+        foreach (PortfolioHolding holding; holdings[0..count])
         {
-            lines ~= padRight(holding.symbol, 7) ~ " " ~
-                padRight(holding.accountTag, 7) ~ " " ~
-                padLeft(formatRawNumber(config, holding.quantity), 7) ~ " " ~
-                padLeft(formatMoney(config, holding.marketValue, holding.currency), 11) ~ " " ~
-                padLeft(formatMoney(config, holding.unrealizedProfitLoss, holding.currency), 11) ~ " " ~
+            lines ~= padRight(holding.symbol, 7)~" " ~
+                padRight(holding.accountTag, 7)~" " ~
+                padLeft(formatRawNumber(config, holding.quantity), 7)~" " ~
+                padLeft(formatMoney(config, holding.marketValue, holding.currency), 11)~" " ~
+                padLeft(formatMoney(config, holding.unrealizedProfitLoss, holding.currency), 11)~" " ~
                 padLeft(formatPercent(config, holding.holdingProportion), 7);
         }
 

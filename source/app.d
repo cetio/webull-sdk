@@ -97,7 +97,7 @@ void main()
         auto ticks = aapl.ticks();
         writeln("Got ", ticks.length, " ticks");
         size_t start = ticks.length > 5 ? ticks.length - 5 : 0;
-        foreach (tick; ticks[start,,$])
+        foreach (tick; ticks[start..$])
             writeln("  ", tick.time, ": $", tick.price, " x ", tick.volume, " (", tick.side, ")");
     });
 

@@ -103,7 +103,7 @@ version (WebullSdkTestDummy)
                 if (received <= 0)
                     break;
 
-                raw ~= cast(string)buffer[0 .. received].idup;
+                raw ~= cast(string)buffer[0..received].idup;
             }
 
             string[] lines = splitLines(raw);
@@ -121,12 +121,12 @@ version (WebullSdkTestDummy)
                 request.path = target;
             else
             {
-                request.path = target[0 .. question];
-                request.queryString = target[question + 1 .. $];
+                request.path = target[0..question];
+                request.queryString = target[question + 1..$];
                 request.query = parseQuery(request.queryString);
             }
 
-            foreach (string line; lines[1 .. $])
+            foreach (string line; lines[1..$])
             {
                 if (line.length == 0)
                     break;
@@ -135,7 +135,7 @@ version (WebullSdkTestDummy)
                 if (separator <= 0)
                     continue;
 
-                request.headers[toLower(line[0 .. separator])] = line[separator + 2 .. $];
+                request.headers[toLower(line[0..separator])] = line[separator + 2..$];
             }
 
             return request;

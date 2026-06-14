@@ -131,9 +131,9 @@ private string normalizedHost(string hostOrEndpoint)
         return hostOrEndpoint;
 
     ptrdiff_t schemeEnd = hostOrEndpoint.indexOf("://");
-    string remainder = hostOrEndpoint[schemeEnd + 3 .. $];
+    string remainder = hostOrEndpoint[schemeEnd + 3..$];
     ptrdiff_t slash = remainder.indexOf('/');
-    return slash < 0 ? remainder : remainder[0 .. slash];
+    return slash < 0 ? remainder : remainder[0..slash];
 }
 
 string encode(string uri, string[string] params, string bodyStr)

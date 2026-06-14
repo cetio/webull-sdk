@@ -53,7 +53,7 @@
 	],
 	"copyright": "Copyright © 2026, cet",
 	"dependencies": {
-		"conductor": "~>1.0.0"
+		"conductor": "~>2.0.0"
 	},
 	"description": "Webull SDK for D with native-feeling finance types.",
 	"license": "AGPL-3.0-only",
