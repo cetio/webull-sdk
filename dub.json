@@ -55,7 +55,7 @@
 	"dependencies": {
 		"conductor": "~>2.0.0"
 	},
-	"description": "Webull SDK for D with native-feeling finance types.",
+	"description": "SDK for the Webull trading API, with accounts, securities, and live trading and market data.",
 	"license": "AGPL-3.0-only",
 	"name": "webull-sdk",
 	"sourcePaths": [
