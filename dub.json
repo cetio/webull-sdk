@@ -2,55 +2,6 @@
 	"authors": [
 		"cet"
 	],
-	"configurations": [
-		{
-			"mainSourceFile": "source/app.d",
-			"name": "application",
-			"targetType": "executable"
-		},
-		{
-			"excludedSourceFiles": [
-				"source/app.d"
-			],
-			"mainSourceFile": "source/examples/account_console.d",
-			"name": "account-console-demo",
-			"targetType": "executable",
-			"versions": [
-				"WebullSdkExampleAccountConsole"
-			]
-		},
-		{
-			"excludedSourceFiles": [
-				"source/app.d"
-			],
-			"name": "dummy-tests",
-			"targetType": "library",
-			"versions": [
-				"WebullSdkTestDummy"
-			]
-		},
-		{
-			"excludedSourceFiles": [
-				"source/app.d"
-			],
-			"name": "live-tests",
-			"targetType": "library",
-			"versions": [
-				"WebullSdkTestLive"
-			]
-		},
-		{
-			"excludedSourceFiles": [
-				"source/app.d"
-			],
-			"name": "full-tests",
-			"targetType": "library",
-			"versions": [
-				"WebullSdkTestDummy",
-				"WebullSdkTestLive"
-			]
-		}
-	],
 	"copyright": "Copyright © 2026, cet",
 	"dependencies": {
 		"conductor": "~>2.0.0"
@@ -58,6 +9,8 @@
 	"description": "SDK for the Webull trading API, with accounts, securities, and live trading and market data.",
 	"license": "AGPL-3.0-only",
 	"name": "webull-sdk",
+	"targetPath": "bin/",
+	"targetType": "library",
 	"sourcePaths": [
 		"source"
 	]

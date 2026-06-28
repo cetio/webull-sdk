@@ -18,3 +18,4 @@ webull-sdk
 env.json
 token.json
 build_output.txt
+bin/*
