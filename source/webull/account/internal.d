@@ -2,9 +2,8 @@ module webull.account.internal;
 
 import std.conv : to;
 import std.json;
-import std.string : assumeUTF, toLower;
+import std.string : toLower;
 import webull.client : Client, Permissions;
-import webull.orchestrate;
 
 package string[] listEndpoints()
 {
@@ -22,16 +21,7 @@ package void enforceAccountsPermission()
 
 package JSONValue requestJson(string path, string[string] queryParams = null)
 {
-    JSONValue json;
-    orchestrate!"v2"(Client.endpoint, path, queryParams).get(
-        (ubyte[] data) {
-            json = parseJSON(data.assumeUTF);
-        },
-        (ubyte[] data) {
-            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
-        },
-    );
-    return json;
+    return Client.get(path, queryParams, "v2");
 }
 
 package JSONValue requestJsonWithFallback(string[] paths, string[string] queryParams = null)

@@ -67,7 +67,7 @@ AccountBalance parseAccountBalance(JSONValue json)
             "availableWithdrawal",
         );
         asset.interestsUnpaid = doubleValue(entry, "interests_unpaid", "interestsUnpaid");
-        balance.accountCurrencyAssets~= asset;
+        balance.accountCurrencyAssets ~= asset;
     }
 
     return balance;

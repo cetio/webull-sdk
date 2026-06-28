@@ -1,9 +1,8 @@
 module webull.security;
 
-import webull.orchestrate;
+import webull.client : Client;
 import webull.market;
 import std.json;
-import std.string : assumeUTF;
 import std.algorithm : map;
 import std.array : join;
 import std.exception : enforce;
@@ -43,21 +42,12 @@ class Security
         this.symbol = symbol;
         this.category = category;
         
-        JSONValue json;
-        orchestrate(
-            "api.webull.com",
+        JSONValue json = Client.get(
             "/instrument/list",
             [
                 "symbols": symbol,
                 "category": cast(string)category
             ]
-        ).get(
-            (ubyte[] data) {
-                json = parseJSON(data.assumeUTF);
-            },
-            (ubyte[] data) {
-                throw new Exception("Failed to fetch instrument: "~cast(string)data.assumeUTF);
-            }
         );
 
         if (json.type == JSONType.object)

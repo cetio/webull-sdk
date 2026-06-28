@@ -1,10 +1,8 @@
 module webull.market.bars;
 
-import webull.orchestrate;
 import webull.market.types;
 import webull.client : Client, Permissions;
 import std.json;
-import std.string : assumeUTF;
 import std.conv : to;
 import std.algorithm : map;
 import std.array : join, array;
@@ -21,9 +19,7 @@ void getBars(
     if (!(Client.permissions & Permissions.BARS))
         throw new Exception("Bars API not available - permission denied");
     
-    JSONValue json;
-    orchestrate!"v2"(
-        "api.webull.com",
+    JSONValue json = Client.get(
         "/openapi/market-data/stock/bars",
         [
             "symbol": security.symbol,
@@ -32,14 +28,8 @@ void getBars(
             "count": count.to!string,
             "real_time_required": realTime.to!string,
             "trading_sessions": sessions.map!(s => cast(string)s).array.join(",")
-        ]
-    ).get(
-        (ubyte[] data) { 
-            json = parseJSON(data.assumeUTF); 
-        },
-        (ubyte[] data) { 
-            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
-        }
+        ],
+        "v2",
     );
     
     security._bars = parseBars(json);
@@ -64,20 +54,11 @@ void getBars(
     params["real_time_required"] = realTime.to!string;
     params["trading_sessions"] = sessions.map!(s => cast(string)s).array.join(",");
 
-    JSONValue json;
-    orchestrate!"v2"(
-        "api.webull.com",
+    JSONValue json = Client.post(
         "/openapi/market-data/stock/batch-bars",
         null,
-        params
-    ).post(
-        (ubyte[] data) { 
-            json = parseJSON(data.assumeUTF); 
-        },
-        (ubyte[] data) { 
-            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
-        },
-        params
+        params,
+        "v2",
     );
     
     Bar[][string] bars = parseBatchBars(json);
@@ -115,7 +96,7 @@ Bar[] parseBars(JSONValue json)
         if ("close" in obj) bar.close = obj["close"].str.to!double;
         if ("volume" in obj) bar.volume = obj["volume"].str.to!long;
         if ("trading_session" in obj) bar.tradingSession = obj["trading_session"].str;
-        bars~= bar;
+        bars ~= bar;
     }
 
     return bars;

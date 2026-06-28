@@ -1,10 +1,8 @@
 module webull.market.snapshot;
 
-import webull.orchestrate;
 import webull.market.types;
 import webull.client : Client, Permissions;
 import std.json;
-import std.string : assumeUTF;
 import std.conv : to;
 import std.algorithm : map;
 import std.array : join, array;
@@ -18,23 +16,14 @@ void getSnapshot(
     if (!(Client.permissions & Permissions.SNAPSHOTS))
         throw new Exception("Snapshots API not available - permission denied");
     
-    JSONValue json;
-    orchestrate(
-        "api.webull.com",
+    JSONValue json = Client.get(
         "/market-data/snapshot",
         [
             "symbols": security.symbol,
             "category": cast(string)security.category,
             "extended_hour_required": extendedHours.to!string,
             "overnight_required": overnight.to!string
-        ]
-    ).get(
-        (ubyte[] data) { 
-            json = parseJSON(data.assumeUTF); 
-        },
-        (ubyte[] data) { 
-            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
-        }
+        ],
     );
     
     if (json.type == JSONType.array && json.array.length > 0)
@@ -54,33 +43,24 @@ Snapshot[] getSnapshot(
     if (!(Client.permissions & Permissions.SNAPSHOTS))
         throw new Exception("Snapshots API not available - permission denied");
 
-    JSONValue json;
-    orchestrate(
-        "api.webull.com",
+    JSONValue json = Client.get(
         "/market-data/snapshot",
         [
             "symbols": securities.map!(x => x.symbol).array.join(","),
             "category": cast(string)securities[0].category,
             "extended_hour_required": extendedHours.to!string,
             "overnight_required": overnight.to!string
-        ]
-    ).get(
-        (ubyte[] data) { 
-            json = parseJSON(data.assumeUTF); 
-        },
-        (ubyte[] data) { 
-            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
-        }
+        ],
     );
     
     Snapshot[] snapshots;
     if (json.type == JSONType.array)
     {
         foreach (i, obj; json.array)
-            snapshots~= parseSnapshot(obj);
+            snapshots ~= parseSnapshot(obj);
     }
     else if (json.type == JSONType.object)
-        snapshots~= parseSnapshot(json);
+        snapshots ~= parseSnapshot(json);
 
     return snapshots;
 }

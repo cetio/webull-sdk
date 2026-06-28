@@ -1,10 +1,8 @@
 module webull.market.quotes;
 
-import webull.orchestrate;
 import webull.market.types;
 import webull.client : Client, Permissions;
 import std.json;
-import std.string : assumeUTF;
 import std.conv : to;
 
 void getOrderBook(
@@ -16,23 +14,15 @@ void getOrderBook(
     if (!(Client.permissions & Permissions.QUOTES))
         throw new Exception("Quotes API not available - permission denied");
     
-    JSONValue json;
-    orchestrate!"v2"(
-        "api.webull.com",
+    JSONValue json = Client.get(
         "/openapi/market-data/stock/quotes",
         [
             "symbol": security.symbol,
             "category": cast(string)security.category,
             "depth": depth.to!string,
             "overnight_required": overnight.to!string
-        ]
-    ).get(
-        (ubyte[] data) { 
-            json = parseJSON(data.assumeUTF); 
-        },
-        (ubyte[] data) { 
-            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
-        }
+        ],
+        "v2",
     );
     
     security._orderBook = parseOrderBook(json);
@@ -51,13 +41,13 @@ OrderBook parseOrderBook(JSONValue json)
     if ("bids" in json && json["bids"].type == JSONType.array)
     {
         foreach (JSONValue level; json["bids"].array)
-            ret.bids~= parseBookLevel(level);
+            ret.bids ~= parseBookLevel(level);
     }
 
     if ("asks" in json && json["asks"].type == JSONType.array)
     {
         foreach (JSONValue level; json["asks"].array)
-            ret.asks~= parseBookLevel(level);
+            ret.asks ~= parseBookLevel(level);
     }
 
     return ret;

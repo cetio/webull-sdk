@@ -4,7 +4,7 @@
 	],
 	"copyright": "Copyright © 2026, cet",
 	"dependencies": {
-		"conductor": "~>2.0.0"
+		"requests": "~>2.2.1"
 	},
 	"description": "SDK for the Webull trading API, with accounts, securities, and live trading and market data.",
 	"license": "AGPL-3.0-only",

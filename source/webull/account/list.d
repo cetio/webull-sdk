@@ -24,7 +24,7 @@ Account[] getAccounts(string subscriptionId = null)
 
     Account[] accounts;
     foreach (AccountSummary summary; parseAccountSummaries(json))
-        accounts~= Account.fromSummary(summary);
+        accounts ~= Account.fromSummary(summary);
 
     return accounts;
 }
@@ -62,7 +62,7 @@ AccountSummary[] parseAccountSummaries(JSONValue json)
         if (summary.accountId.length == 0)
             continue;
 
-        summaries~= summary;
+        summaries ~= summary;
     }
 
     return summaries;

@@ -95,7 +95,7 @@ AccountPositionPage parseAccountPositionPage(JSONValue json)
             "holding_proportion",
             "holdingProportion",
         );
-        page.holdings~= position;
+        page.holdings ~= position;
     }
 
     if (page.lastInstrumentId.length == 0 && page.holdings.length > 0)

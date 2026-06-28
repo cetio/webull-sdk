@@ -1,8 +1,10 @@
 module webull.client;
 
-import webull.orchestrate;
-import std.json;
-import std.string : assumeUTF;
+import webull.signer;
+
+import requests;
+
+import std.json : JSONValue, JSONType, parseJSON;
 import std.datetime;
 import std.stdio : writeln;
 import std.array : array;
@@ -47,60 +49,96 @@ static class Client
     static Permissions permissions = Permissions.NONE;
     static string[] _accounts;
 
+    static JSONValue get(
+        string path,
+        string[string] queryParams = null,
+        string apiVersion = "v1",
+    )
+    {
+        string[string] headers = signRequest(
+            endpoint,
+            path,
+            queryParams,
+            JSONValue.emptyObject,
+            key,
+            secret,
+            apiVersion,
+        );
+
+        string url = composeURL(endpoint, path)~buildQueryString(queryParams);
+
+        Request req = Request();
+        req.addHeaders(headers);
+        Response response = req.get(url);
+        return checkAndParse(response);
+    }
+
+    static JSONValue post(
+        string path,
+        string[string] queryParams = null,
+        JSONValue bodyParams = JSONValue.emptyObject,
+        string apiVersion = "v1",
+    )
+    {
+        string[string] headers = signRequest(
+            endpoint,
+            path,
+            queryParams,
+            bodyParams,
+            key,
+            secret,
+            apiVersion,
+        );
+
+        string url = composeURL(endpoint, path)~buildQueryString(queryParams);
+        string payload = bodyParams.type == JSONType.null_ ? "" : bodyParams.toString;
+
+        Request req = Request();
+        req.addHeaders(headers);
+        req.addHeaders(["Content-Type": "application/json"]);
+        Response response = req.post(url, payload, "application/json");
+        return checkAndParse(response);
+    }
+
     static void createToken(void delegate(Status) poll = null)
     {
-        JSONValue json;
-        orchestrate!"v2"(
-            endpoint,
-            "/openapi/auth/token/create"
-        ).post(
-            (ubyte[] data) {
-                json = parseJSON(data.assumeUTF);
-            },
-            (ubyte[] data) {
-                throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
-            }
+        JSONValue json = post(
+            "/openapi/auth/token/create",
+            null,
+            JSONValue.emptyObject,
+            "v2",
         );
-        
+
         if ("token" !in json)
             throw new Exception("Token not found in response "~json.toString());
         if ("expires" !in json)
             throw new Exception("Expires not found in response "~json.toString());
-        
+
         token.token = json["token"].str;
         token.expires = json["expires"].integer;
         token.status = Status.PENDING;
-        
+
         // Poll for token status until it's NORMAL (MFA)
         while (token.status == Status.PENDING)
         {
             if (poll !is null)
                 poll(token.status);
-            
+
             Thread.sleep(dur!"msecs"(5000));
             checkToken();
         }
-        
+
         if (token.status == Status.INVALID || token.status == Status.EXPIRED)
             throw new Exception("Token creation failed with status: "~cast(string)token.status);
     }
 
     static void checkToken()
     {
-        JSONValue json;
-        orchestrate!"v2"(
-            endpoint,
+        JSONValue json = post(
             "/openapi/auth/token/check",
             null,
-            JSONValue(["token" : token.token])
-        ).post(
-            (ubyte[] data) {
-                json = parseJSON(data.assumeUTF);
-            },
-            (ubyte[] data) {
-                throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
-            },
-            JSONValue(["token" : token.token])
+            JSONValue(["token": token.token]),
+            "v2",
         );
 
         if ("status" !in json)
@@ -108,73 +146,76 @@ static class Client
 
         if ("expires" in json)
             token.expires = json["expires"].integer;
-        
+
         token.status = cast(Status)json["status"].str;
     }
 
     static void detectPermissions()
     {
         permissions = Permissions.NONE;
-        
+
         JSONValue json;
+
         json = JSONValue(null);
-        orchestrate!"v2"(endpoint, "/openapi/market-data/stock/bars",
-            ["symbol": "AAPL", "category": "US_STOCK", "timespan": "M1", "real_time_required": "true"])
-            .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
-                    (ubyte[] data) { });
-                    
+        try
+            json = get("/openapi/market-data/stock/bars",
+                ["symbol": "AAPL", "category": "US_STOCK", "timespan": "M1", "real_time_required": "true"], "v2");
+        catch (Exception)
+            json = JSONValue(null);
+
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.BARS;
-        
+
         json = JSONValue(null);
-        orchestrate!"v2"(endpoint, "/openapi/market-data/stock/tick",
-            ["symbol": "AAPL", "category": "US_STOCK"])
-            .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
-                    (ubyte[] data) { });
+        try
+            json = get("/openapi/market-data/stock/tick",
+                ["symbol": "AAPL", "category": "US_STOCK"], "v2");
+        catch (Exception)
+            json = JSONValue(null);
 
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.TICKS;
-        
+
         json = JSONValue(null);
-        orchestrate!"v2"(endpoint, "/openapi/market-data/stock/quotes",
-            ["symbol": "AAPL", "category": "US_STOCK", "depth": "1", "overnight_required": "false"])
-            .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
-                    (ubyte[] data) { });
+        try
+            json = get("/openapi/market-data/stock/quotes",
+                ["symbol": "AAPL", "category": "US_STOCK", "depth": "1", "overnight_required": "false"], "v2");
+        catch (Exception)
+            json = JSONValue(null);
 
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.QUOTES;
-        
+
         json = JSONValue(null);
-        orchestrate(endpoint, "/market-data/snapshot",
-            ["symbols": "AAPL", "category": "US_STOCK"])
-            .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
-                    (ubyte[] data) { });
+        try
+            json = get("/market-data/snapshot",
+                ["symbols": "AAPL", "category": "US_STOCK"]);
+        catch (Exception)
+            json = JSONValue(null);
 
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.SNAPSHOTS;
-        
+
         json = JSONValue(null);
-        orchestrate!"v2"(endpoint, "/openapi/market-data/stock/footprint",
-            ["symbol": "AAPL", "category": "US_STOCK", "timespan": "M1", "count": "1"])
-            .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
-                    (ubyte[] data) { });
-                    
+        try
+            json = get("/openapi/market-data/stock/footprint",
+                ["symbol": "AAPL", "category": "US_STOCK", "timespan": "M1", "count": "1"], "v2");
+        catch (Exception)
+            json = JSONValue(null);
+
         if (json.type != JSONType.object || "error_code" !in json)
             permissions |= Permissions.FOOTPRINT;
 
         json = JSONValue(null);
         try
-        {
-            orchestrate!"v2"(endpoint, "/openapi/account/list")
-                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
-                        (ubyte[] data) { throw new Exception(cast(string)data.assumeUTF); });
-        }
+            json = get("/openapi/account/list", null, "v2");
         catch (Exception)
         {
             json = JSONValue(null);
-            orchestrate!"v2"(endpoint, "/app/subscriptions/list")
-                .get((ubyte[] data) { json = parseJSON(data.assumeUTF); },
-                        (ubyte[] data) { });
+            try
+                json = get("/app/subscriptions/list", null, "v2");
+            catch (Exception)
+                json = JSONValue(null);
         }
 
         if (json.type != JSONType.object || "error_code" !in json)
@@ -190,27 +231,9 @@ static class Client
 
             JSONValue json;
             try
-            {
-                orchestrate!"v2"(endpoint, "/openapi/account/list").get(
-                    (ubyte[] data) {
-                        json = parseJSON(data.assumeUTF);
-                    },
-                    (ubyte[] data) {
-                        throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
-                    }
-                );
-            }
+                json = get("/openapi/account/list", null, "v2");
             catch (Exception)
-            {
-                orchestrate!"v2"(endpoint, "/app/subscriptions/list").get(
-                    (ubyte[] data) {
-                        json = parseJSON(data.assumeUTF);
-                    },
-                    (ubyte[] data) {
-                        throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF);
-                    }
-                );
-            }
+                json = get("/app/subscriptions/list", null, "v2");
 
             JSONValue[] entries;
             if (json.type == JSONType.array)
@@ -232,5 +255,29 @@ static class Client
         }
 
         return _accounts;
+    }
+
+private:
+    static JSONValue checkAndParse(Response response)
+    {
+        string body = cast(string)response.responseBody.data;
+        if (body.length == 0)
+            return JSONValue.emptyObject;
+
+        JSONValue ret;
+        try
+            ret = parseJSON(body);
+        catch (Exception)
+        {
+            if (response.code >= 200 && response.code < 300)
+                return JSONValue.emptyObject;
+
+            throw new Exception("HTTP request failed: "~body);
+        }
+
+        if (response.code >= 400)
+            throw new Exception("HTTP request failed: "~body);
+
+        return ret;
     }
 }

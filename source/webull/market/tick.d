@@ -1,10 +1,8 @@
 module webull.market.tick;
 
-import webull.orchestrate;
 import webull.market.types;
 import webull.client : Client, Permissions;
 import std.json;
-import std.string : assumeUTF;
 import std.conv : to;
 import std.algorithm : map;
 import std.array : array, join;
@@ -18,23 +16,15 @@ void getTicks(
     if (!(Client.permissions & Permissions.TICKS))
         throw new Exception("Ticks API not available - permission denied");
     
-    JSONValue json;
-    orchestrate!"v2"(
-        "api.webull.com",
+    JSONValue json = Client.get(
         "/openapi/market-data/stock/tick",
         [
             "symbol": security.symbol,
             "category": cast(string)security.category,
             "count": count.to!string,
             "trading_sessions": sessions.map!(s => cast(string)s).array.join(",")
-        ]
-    ).get(
-        (ubyte[] data) { 
-            json = parseJSON(data.assumeUTF); 
-        },
-        (ubyte[] data) { 
-            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
-        }
+        ],
+        "v2",
     );
     
     security._ticks = parseTicks(json);
@@ -55,7 +45,7 @@ Tick[] parseTicks(JSONValue json)
         if ("price" in obj) tick.price = obj["price"].str.to!double;
         if ("volume" in obj) tick.volume = obj["volume"].str.to!long;
         if ("side" in obj) tick.side = cast(Direction)obj["side"].str;
-        ticks~= tick;
+        ticks ~= tick;
     }
     return ticks;
 }

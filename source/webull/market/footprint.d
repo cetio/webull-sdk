@@ -1,10 +1,8 @@
 module webull.market.footprint;
 
-import webull.orchestrate;
 import webull.market.types;
 import webull.client : Client, Permissions;
 import std.json;
-import std.string : assumeUTF;
 import std.algorithm : map;
 import std.array : join, array;
 import std.conv : to;
@@ -21,9 +19,7 @@ void getFootprint(
     if (!(Client.permissions & Permissions.FOOTPRINT))
         throw new Exception("Footprint API not available - permission denied");
     
-    JSONValue json;
-    orchestrate!"v2"(
-        "api.webull.com",
+    JSONValue json = Client.get(
         "/openapi/market-data/stock/footprint",
         [
             "symbol": security.symbol,
@@ -32,14 +28,8 @@ void getFootprint(
             "count": count.to!string,
             "real_time_required": realTime.to!string,
             "trading_sessions": sessions.map!(s => cast(string)s).array.join(",")
-        ]
-    ).get(
-        (ubyte[] data) { 
-            json = parseJSON(data.assumeUTF); 
-        },
-        (ubyte[] data) { 
-            throw new Exception("HTTP request failed: "~cast(string)data.assumeUTF); 
-        }
+        ],
+        "v2",
     );
     
     security._bars = parseFootprintBars(json);
@@ -75,7 +65,7 @@ Bar[] parseFootprintBars(JSONValue json)
                     BookLevel level;
                     level.price = price.to!double;
                     level.size = volume.str.to!long;
-                    bar.buyDetail~= level;
+                    bar.buyDetail ~= level;
                 }
             }
 
@@ -86,11 +76,11 @@ Bar[] parseFootprintBars(JSONValue json)
                     BookLevel level;
                     level.price = price.to!double;
                     level.size = volume.str.to!long;
-                    bar.sellDetail~= level;
+                    bar.sellDetail ~= level;
                 }
             }
 
-            bars~= bar;
+            bars ~= bar;
         }
     }
     return bars;
